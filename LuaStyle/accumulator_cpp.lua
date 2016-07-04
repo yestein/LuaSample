@@ -10,7 +10,7 @@ function Accumualtor:Gen(start_index)
     return result
 end
 
-if arg and arg[1] == "accumulator_cpp" then
+if arg and arg[1] == "accumulator_cpp.lua" then
     local Class = require("class")
 
     local acc1 = Class.New(Accumualtor)
