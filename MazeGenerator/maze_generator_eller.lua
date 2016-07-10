@@ -40,7 +40,7 @@ local function PrintMap(data)
     end
 end
 
-local function FillRect(x, y)
+local function FillMaze(x, y)
     local maze_data = {
         x = x,
         y = y,
@@ -137,7 +137,7 @@ local function GetRowHandler(maze_data, max_x, max_y, judge_break_func)
 end
 
 local function EllerGen(max_x, max_y)
-    local maze_data = FillRect(max_x, max_y)
+    local maze_data = FillMaze(max_x, max_y)
     local row_handler = GetRowHandler(maze_data, max_x, max_y, CanBreak)
     for room_y = 1, max_y do
         row_handler(room_y)
