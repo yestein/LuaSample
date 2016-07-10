@@ -1,7 +1,7 @@
 --=======================================================================
--- File Name    : maze_generator_2.bytes
+-- File Name    : eller_algorithm.lua
 -- Creator      : yestein(yestein86@gmail.com)
--- Date         : 31/05/2016 11:48:35
+-- Date         : 10/07/2016 11:26:53
 -- Description  : description
 -- Modify       :
 --=======================================================================
@@ -151,7 +151,7 @@ local function EllerGen(max_x, max_y)
 end
 
 --Unit Test
-if arg and arg[1] == "maze_generator_eller.lua" then
+if arg and arg[1] == "eller_algorithm.lua" then
     math.randomseed(os.time())
     PrintMap(EllerGen(7, 5))
 end
