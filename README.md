@@ -1,2 +1,2 @@
 # LuaSample
-For Lua爱好者
+For 订阅号：Lua爱好者
