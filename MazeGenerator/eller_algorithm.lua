@@ -30,13 +30,17 @@ local function Index2XY(index)
     return math.floor(index / 10000), index % 10000
 end
 
+local function PrintLine(data)
+    local str = ''
+    for x, flag in ipairs(data) do
+        str = str .. (ICON[flag] or 'O')
+    end
+    print(str)
+end
+
 local function PrintMap(data)
     for y, row in ipairs(data) do
-        local str = ''
-        for x, flag in ipairs(row) do
-            str = str .. (ICON[flag] or 'O')
-        end
-        print(str)
+        PrintLine(row)
     end
 end
 
@@ -119,8 +123,7 @@ local function GetRowHandler(maze_data, max_x, max_y, judge_break_func)
         return judge_break_func(flag_a, flag_b) or (room_y == max_y and flag_a ~= flag_b)
     end
 
-    return function(room_y)
-        local temp_set_list = {}
+    local function HorizontalBreak(room_y)
         for room_x = 1, max_x do
             local flag_a = GetRoomFlag(room_x, room_y)
             local set = GetSet(flag_a)
@@ -128,12 +131,6 @@ local function GetRowHandler(maze_data, max_x, max_y, judge_break_func)
                 set = CreateSet(flag_a)
                 set.Add(XY2Index(room_x, room_y))
             end
-            local temp_set = temp_set_list[flag_a]
-            if not temp_set then
-                temp_set = Util.GetUnionSet()
-                temp_set_list[flag_a] = temp_set
-            end
-            temp_set.Add(XY2Index(room_x, room_y))
 
             if room_x == max_x then
                 break
@@ -146,13 +143,21 @@ local function GetRowHandler(maze_data, max_x, max_y, judge_break_func)
                 Break(room_x, room_y, room_x + 1, room_y)
             end
         end
+    end
 
-        if room_y == max_y then
-            return
+    local function VerticalBreak(room_y)
+        local temp_set_list = {}
+        for room_x = 1, max_x do
+            local flag_a = GetRoomFlag(room_x, room_y)
+            local temp_set = temp_set_list[flag_a]
+            if not temp_set then
+                temp_set = Util.GetUnionSet()
+                temp_set_list[flag_a] = temp_set
+            end
+            temp_set.Add(XY2Index(room_x, room_y))
         end
 
-        --Down Break
-        for index, set in pairs(temp_set_list) do
+        for flag, set in pairs(temp_set_list) do
             local count = math.random(1, set.Count())
             local pick_list = Util.RandomPick(count, set._GetArray())
             for _, index in ipairs(pick_list) do
@@ -161,13 +166,22 @@ local function GetRowHandler(maze_data, max_x, max_y, judge_break_func)
             end
         end
     end
+
+    return {
+        HorizontalBreak = HorizontalBreak,
+        VerticalBreak = VerticalBreak,
+    }
 end
 
 local function EllerGen(max_x, max_y)
     local maze_data = FillMaze(max_x, max_y)
     local row_handler = GetRowHandler(maze_data, max_x, max_y, CanBreak)
     for room_y = 1, max_y do
-        row_handler(room_y)
+        row_handler.HorizontalBreak(room_y)
+        if room_y == max_y then
+            break
+        end
+        row_handler.VerticalBreak(room_y)
     end
     --Random Pick Start and Target
     local start_x, start_y = 1, 1
@@ -177,10 +191,49 @@ local function EllerGen(max_x, max_y)
     return maze_data
 end
 
+local function DisplayEllerGen(max_x, max_y, draw)
+    local co = coroutine.create(function()
+        local maze_data = FillMaze(max_x, max_y)
+        local row_handler = GetRowHandler(maze_data, max_x, max_y, CanBreak)
+        draw(maze_data[1])
+        coroutine.yield()
+        for room_y = 1, max_y do
+            row_handler.HorizontalBreak(room_y)
+            draw(maze_data[2 * room_y])
+            coroutine.yield()
+            if room_y ~= max_y then
+                row_handler.VerticalBreak(room_y)
+            end
+            draw(maze_data[2 * room_y + 1])
+            coroutine.yield()
+        end
+        --Random Pick Start and Target
+        local start_x, start_y = 1, 1
+        maze_data[2 * start_y][2 * start_x] = START_ROOM
+        local target_x, target_y = math.random(max_x // 2, max_x), math.random(max_y // 2, max_y)
+        maze_data[2 * target_y][2 * target_x] = TARGET_ROOM
+        return maze_data
+    end)
+    return co
+end
+
 --Unit Test
 if arg and arg[1] == "eller_algorithm.lua" then
     math.randomseed(os.time())
-    PrintMap(EllerGen(7, 5))
+    -- PrintMap(EllerGen(7, 5))
+    local co = DisplayEllerGen(7, 5, PrintLine)
+    local last_clock = os.clock()
+    repeat
+        local success, result = false
+        local cur_clock = os.clock()
+        if cur_clock - last_clock > 0.5 then
+            last_clock = cur_clock
+            success, result = coroutine.resume(co)
+            if not success then
+                print(result)
+            end
+        end
+        until result
 end
 
 return EllerGen
